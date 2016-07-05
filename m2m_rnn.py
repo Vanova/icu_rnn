@@ -30,10 +30,10 @@ class M2M_RNN:
 
         self.layers = [ inputs ]
         for i,num_curr in enumerate(num_hidden):
-            lstm = LSTMLayer(num_prev, num_curr, input_layers=[prev_layer], name="lstm{0}".format(i+1), drop_prob=drop_prob)
+            lstm = LSTMLayer(num_prev, num_curr, input_layers=[prev_layer], name="lstm{0}".format(i+1))
             num_prev = num_curr
             prev_layer = lstm
-            prev_layer = DropoutLayer(input_layers=[prev_layer], dropout_probability=dropout_lstm)
+            prev_layer = DropoutLayer(input_layer=prev_layer, dropout_probability=dropout_lstm)
             self.layers.append(lstm)
         sigmoid = SigmoidLayer(num_prev, num_output, input_layers=[prev_layer], name="yhat")
         self.layers.append(sigmoid)
@@ -59,8 +59,8 @@ class M2M_RNN:
     def train(self, X, Y, eta, alpha, lambda2, dropout_lstm):
         return self.train_func(X,Y,eta,alpha, lambda2, dropout_lstm)
 
-    def predict(self):
-        return predict_func(X, 0.0)
+    def predict(self, X):
+        return self.predict_func(X, 0.0)
 
     def predict_sequence(self, X):
         return self.predict_sequence_func(X, 0.0)

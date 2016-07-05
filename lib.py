@@ -51,11 +51,21 @@ def sigmoid(X):
 
 
 def dropout(X, p=0.):
-    if p > 0:
-        retain_prob = 1 - p
-        X *= srng.binomial(X.shape, p=retain_prob, dtype=theano.config.floatX)
-        X /= retain_prob
-        return X
+    # rng = np.random.RandomState(777)
+    srng = T.shared_randomstreams.RandomStreams(777)
+    # p=1-p because 1's indicate keep and p is prob of dropping
+    retain_prob = 1 - p
+    mask = srng.binomial(p=retain_prob, size=X.shape, dtype=theano.config.floatX)
+    # The cast is important because
+    # int * float32 = float64 which pulls things off the gpu
+    X *= T.cast(mask, theano.config.floatX)
+    X /= retain_prob
+    return X
+
+    # retain_prob = 1 - p
+    # X *= srng.binomial(X.shape, p=retain_prob, dtype=theano.config.floatX)
+    # X /= retain_prob
+    # return X
 
 
 def rectify(X):
@@ -85,6 +95,7 @@ def momentum(cost, params, caches, eta, rho=.1, clip_at=0.0, scale_norm=0.0, lam
     updates = []
     grads = T.grad(cost=cost, wrt=params)
 
+    # TODO test!!!
     for p, c, g in zip(params, caches, grads):
         if clip_at > 0.0:
             grad = clip(g, clip_at)
@@ -94,7 +105,8 @@ def momentum(cost, params, caches, eta, rho=.1, clip_at=0.0, scale_norm=0.0, lam
         if scale_norm > 0.0:
             grad = scale(g, scale_norm)
 
-        delta = rho * g + (1-rho) * c
+        # delta = rho * g + (1-rho) * c
+        delta = rho * grad + (1-rho) * c
         updates.append([c, delta])
         updates.append([p, p - eta * ( delta + lambda2 * p)])
 
